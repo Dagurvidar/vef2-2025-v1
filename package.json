@@ -4,7 +4,7 @@
   "description": "- Upprifjun og notkun á verkfærum og tólum úr vefforritun 1.\r - Ósamstillt forritun með Node.js og notkun á módúlum.\r - Útbúa test og setja upp keyrslu á testum með GitHub Actions.\r - Vinnsla með gagnastrúktúra og staðfestingu á gögnum.",
   "main": "index.js",
   "scripts": {
-    "start": "node src/index.js",
+    "start": "live-server dist",
     "test": "vitest",
     "lint": "eslint .",
     "build": "node src/index.js"
