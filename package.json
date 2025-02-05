@@ -7,7 +7,7 @@
     "start": "live-server dist",
     "test": "vitest",
     "lint": "eslint .",
-    "build": "node src/index.js"
+    "build": "node build.js"
   },
   "type": "module",
   "devDependencies": {

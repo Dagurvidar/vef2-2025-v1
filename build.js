@@ -37,20 +37,46 @@ async function generateIndex() {
     return;
   }
 
+  // Validate and filter valid categories
+  const validCategories = await Promise.all(
+    indexData.map(async (category) => {
+      console.log(category.file);
+      if (!category?.file || !category?.title) {
+        console.log(
+          `Skipping category ${JSON.stringify(
+            category
+          )} - Missing file or title.`
+        );
+        return null;
+      }
+
+      const validation = await validateQuizFile(`./data/${category.file}`);
+      if (!validation.valid) {
+        console.error(validation.error);
+        return null;
+      }
+
+      return category;
+    })
+  );
+
+  // Remove null values (invalid categories)
+  const filteredCategories = validCategories.filter(Boolean);
+
+  // Generate the HTML content
   const htmlContent = `
   <!DOCTYPE html>
-  <html lang="en">
+  <html lang="is">
   <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Quiz Categories</title>
-      <link rel="stylesheet" href="styles.css">
+      <link rel="stylesheet" href="./styles.css">
   </head>
   <body>
       <h1>Quiz Categories</h1>
       <ul>
-          ${indexData
-            .filter((category) => category?.file && category?.title) // Ensure valid categories
+          ${filteredCategories
             .map(
               (category) =>
                 `<li><a href="${category.file.replace(".json", ".html")}">${
@@ -63,6 +89,72 @@ async function generateIndex() {
   </html>`;
 
   await writeHtml("index.html", htmlContent);
+}
+
+/**
+ * Validate the quiz data file.
+ * @param {string} filePath - Path to the json file.
+ * @returns {Promise<{valid: boolean, data: object | null, error?: string}>}
+ */
+async function validateQuizFile(filePath) {
+  const data = await readJson(filePath);
+
+  if (!data) {
+    console.log(`❌ File ${filePath} does not exist.`);
+    return {
+      valid: false,
+      data: null,
+      error: `❌ Error: File ${filePath} does not exist.`,
+    };
+  }
+
+  if (
+    !data.title ||
+    !Array.isArray(data.questions) ||
+    data.questions.length === 0
+  ) {
+    console.log(
+      `❌ File ${filePath} is missing a title or has no valid questions.`
+    );
+    return {
+      valid: false,
+      data: null,
+      error: `❌ Error: ${filePath} is missing 'title' or has an invalid 'questions' array.`,
+    };
+  }
+
+  // Filter out invalid answers but keep the file
+  let hasInvalidAnswers = false;
+  data.questions.forEach((q) => {
+    if (!q.question || !Array.isArray(q.answers)) {
+      console.error(
+        `❌ Skipping question "${
+          q.question || "UNKNOWN"
+        }" in ${filePath} - Invalid answers format.`
+      );
+      return;
+    }
+
+    // Remove invalid answers
+    q.answers = q.answers.filter((a) => {
+      if (!("answer" in a) || typeof a.correct !== "boolean") {
+        console.error(
+          `❌ Removing invalid answer in question: "${q.question}" in ${filePath}.`
+        );
+        hasInvalidAnswers = true;
+        return false; // Skip this answer
+      }
+      return true; // Keep valid answers
+    });
+  });
+
+  if (hasInvalidAnswers) {
+    console.log(
+      `⚠️ File ${filePath} had some invalid answers that were removed.`
+    );
+  }
+
+  return { valid: true, data };
 }
 
 async function generateCategories() {
@@ -87,7 +179,7 @@ async function generateCategories() {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${categoryData.title}</title>
-        <link rel="stylesheet" href="styles.css">
+        <link rel="stylesheet" href="./styles.css">
         <script defer src="script.js"></script>
     </head>
     <body>
@@ -140,10 +232,20 @@ async function writeHtml(fileName, htmlContent) {
   }
 }
 
+async function copyStyles() {
+  try {
+    await fs.copyFile("./src/styles.css", "./dist/styles.css");
+    console.log("✅ styles.css copied to dist/");
+  } catch (error) {
+    console.error("❌ Failed to copy styles.css:", error.message);
+  }
+}
+
 async function main() {
   console.log("Generating HTML files...");
   await generateIndex();
   await generateCategories();
+  await copyStyles();
   console.log("Build complete!");
 }
 
