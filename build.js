@@ -37,7 +37,6 @@ async function generateIndex() {
     return;
   }
 
-  // Validate and filter valid categories
   const validCategories = await Promise.all(
     indexData.map(async (category) => {
       console.log(category.file);
@@ -60,10 +59,8 @@ async function generateIndex() {
     })
   );
 
-  // Remove null values (invalid categories)
   const filteredCategories = validCategories.filter(Boolean);
 
-  // Generate the HTML content
   const htmlContent = `
   <!DOCTYPE html>
   <html lang="is">
@@ -92,19 +89,19 @@ async function generateIndex() {
 }
 
 /**
- * Validate the quiz data file.
- * @param {string} filePath - Path to the json file.
+ * fjarlægir skrár sem eru ekki til eða eru af vitlausu format
+ * @param {string} filePath - slóðin að json skránni.
  * @returns {Promise<{valid: boolean, data: object | null, error?: string}>}
  */
 async function validateQuizFile(filePath) {
   const data = await readJson(filePath);
 
   if (!data) {
-    console.log(`❌ File ${filePath} does not exist.`);
+    console.log(`File ${filePath} does not exist.`);
     return {
       valid: false,
       data: null,
-      error: `❌ Error: File ${filePath} does not exist.`,
+      error: `Error: File ${filePath} does not exist.`,
     };
   }
 
@@ -114,12 +111,12 @@ async function validateQuizFile(filePath) {
     data.questions.length === 0
   ) {
     console.log(
-      `❌ File ${filePath} is missing a title or has no valid questions.`
+      `File ${filePath} is missing a title or has no valid questions.`
     );
     return {
       valid: false,
       data: null,
-      error: `❌ Error: ${filePath} is missing 'title' or has an invalid 'questions' array.`,
+      error: `Error: ${filePath} is missing 'title' or has an invalid 'questions' array.`,
     };
   }
 
@@ -128,7 +125,7 @@ async function validateQuizFile(filePath) {
   data.questions.forEach((q) => {
     if (!q.question || !Array.isArray(q.answers)) {
       console.error(
-        `❌ Skipping question "${
+        `Skipping question "${
           q.question || "UNKNOWN"
         }" in ${filePath} - Invalid answers format.`
       );
@@ -139,19 +136,17 @@ async function validateQuizFile(filePath) {
     q.answers = q.answers.filter((a) => {
       if (!("answer" in a) || typeof a.correct !== "boolean") {
         console.error(
-          `❌ Removing invalid answer in question: "${q.question}" in ${filePath}.`
+          `Removing invalid answer in question: "${q.question}" in ${filePath}.`
         );
         hasInvalidAnswers = true;
-        return false; // Skip this answer
+        return false;
       }
-      return true; // Keep valid answers
+      return true;
     });
   });
 
   if (hasInvalidAnswers) {
-    console.log(
-      `⚠️ File ${filePath} had some invalid answers that were removed.`
-    );
+    console.log(`File ${filePath} had some invalid answers that were removed.`);
   }
 
   return { valid: true, data };
@@ -178,32 +173,43 @@ async function generateCategories() {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${categoryData.title}</title>
-        <link rel="stylesheet" href="./styles.css">
-        <script defer src="script.js"></script>
+        <title>${escapeHTML(categoryData.title)}</title>
+        <link rel="stylesheet" href="../styles.css">
+        <script defer src="../src/main.js"></script>
     </head>
     <body>
-        <h1>${categoryData.title}</h1>
+        <h1>${escapeHTML(categoryData.title)}</h1>
         <div id="quiz-container">
             ${categoryData.questions
-              .filter((q) => Array.isArray(q.answers)) // Ensure valid questions
-              .map(
-                (q, qIndex) => `
+              .map((q, qIndex) => {
+                // Ensure q.answers is an array
+                if (!Array.isArray(q.answers)) {
+                  console.error(
+                    `\t Skipping question "${q.question}" in ${category.file} - Answers are missing or invalid.`
+                  );
+                  return ""; // Skip this question
+                }
+
+                return `
                 <div class="question">
-                    <p>${q.question}</p>
+                    <p>${escapeHTML(q.question)}</p>
                     <ul>
                         ${q.answers
                           .map(
                             (a, aIndex) => `
                             <li>
-                                <input type="radio" name="q${qIndex}" id="q${qIndex}-${aIndex}" data-correct="${a.correct}">
-                                <label for="q${qIndex}-${aIndex}">${a.answer}</label>
+                                <input type="radio" name="q${qIndex}" id="q${qIndex}-${aIndex}" data-correct="${
+                              a.correct
+                            }">
+                                <label for="q${qIndex}-${aIndex}">${escapeHTML(
+                              a.answer
+                            )}</label>
                             </li>`
                           )
                           .join("")}
                     </ul>
-                </div>`
-              )
+                </div>`;
+              })
               .join("")}
             <button onclick="checkAnswers()">Check Answers</button>
         </div>
@@ -232,12 +238,32 @@ async function writeHtml(fileName, htmlContent) {
   }
 }
 
+/**
+ * Breytir html merkjum í venjulegan texta.
+ * @param {string} str - strengurinn sem inniheldur html merki.
+ * @returns {string} - túlkaði strengurinn
+ */
+function escapeHTML(str) {
+  try {
+    str
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;")
+      .replace(/&/g, "&amp;");
+  } catch (error) {
+    console.log("\t could not escape HTML", error);
+    return "";
+  }
+  return str;
+}
+
 async function copyStyles() {
   try {
     await fs.copyFile("./src/styles.css", "./dist/styles.css");
-    console.log("✅ styles.css copied to dist/");
+    console.log("styles.css copied to dist/");
   } catch (error) {
-    console.error("❌ Failed to copy styles.css:", error.message);
+    console.error("Failed to copy styles.css:", error.message);
   }
 }
 
