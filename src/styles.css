@@ -43,23 +43,18 @@ button {
   padding: 0.25rem 0.5rem;
 }
 
-/*
-#root {
+.wrapper {
   display: flex;
-  flex-direction: column;
-  gap: var(--spacing);
-  margin: var(--spacing) auto;
-  padding-inline: var(--spacing);
-  max-width: var(--max-width);
+  width: 100%;
+  justify-content: center;
 }
-  */
 
-main,
-section,
-.content {
+.wrapper-content {
   display: flex;
   flex-flow: column wrap;
   gap: calc(0.5 * var(--spacing));
+  padding-left: 2rem;
+  padding-right: 2rem;
 }
 
 ul {
@@ -85,7 +80,6 @@ ul {
 .question {
   display: flex;
   flex-direction: column;
-  flex-wrap: wrap;
   gap: 0.5rem;
 }
 
@@ -101,13 +95,6 @@ ul {
   gap: 0.5rem;
 }
 
-/*
-.question label {
-  display: flex;
-  gap: 0.25rem;
-}
-*/
-
 .correct-answer {
   background-color: #d4edda;
   color: #155724;
@@ -118,21 +105,9 @@ ul {
   color: #721c24;
 }
 
-img {
-  width: 90%;
-  max-width: var(--image-max-width);
-}
-
-@media (width <= 370px) {
-  h1 {
-    font-size: 24px;
+@media (width >= 700px) {
+  .wrapper-content {
+    min-width: 650px;
+    max-width: 70%;
   }
-}
-
-.keyword-item {
-  margin-bottom: calc(1.5 * var(--spacing));
-}
-
-.keyword-item h3 {
-  margin-top: var(--spacing);
 }

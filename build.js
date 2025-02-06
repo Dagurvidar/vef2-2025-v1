@@ -70,18 +70,22 @@ async function generateIndexAndCategories() {
       <link rel="stylesheet" href="./styles.css">
   </head>
   <body>
-      <h1>Quiz Categories</h1>
-      <ul>
-          ${filteredCategories
-            .map(
-              (category) =>
-                `<li><a href="${category.file.replace(
-                  ".json",
-                  ".html"
-                )}">${escapeHTML(category.title)}</a></li>`
-            )
-            .join("")}
-      </ul>
+    <div class="wrapper">
+      <div class="wrapper-content">
+        <h1>Quiz Categories</h1>
+        <ul>
+            ${filteredCategories
+              .map(
+                (category) =>
+                  `<li><a href="${category.file.replace(
+                    ".json",
+                    ".html"
+                  )}">${escapeHTML(category.title)}</a></li>`
+              )
+              .join("")}
+        </ul>
+      </div>
+    </div>
   </body>
   </html>`;
 
@@ -104,40 +108,44 @@ async function generateIndexAndCategories() {
           <script defer src="../src/main.js"></script>
         </head>
         <body>
-          <h1>${escapeHTML(categoryData.title)}</h1>
-          <div id="quiz-container" class="question-container">
-            ${categoryData.questions
-              .map((q, qIndex) => {
-                if (!Array.isArray(q.answers) || q.answers.length === 0) {
-                  console.error(
-                    "\t",
-                    `Skipping question "${q.question}" in ${category.file} - No valid answers.`
-                  );
-                  return "";
-                }
+          <div class="wrapper">
+            <div class="wrapper-content">
+              <h1>${escapeHTML(categoryData.title)}</h1>
+              <div id="quiz-container" class="question-container">
+                ${categoryData.questions
+                  .map((q, qIndex) => {
+                    if (!Array.isArray(q.answers) || q.answers.length === 0) {
+                      console.error(
+                        "\t",
+                        `Skipping question "${q.question}" in ${category.file} - No valid answers.`
+                      );
+                      return "";
+                    }
 
-                return `
-                <div class="question">
-                    <p>${escapeHTML(q.question)}</p>
-                    <ul>
-                        ${q.answers
-                          .map(
-                            (a, aIndex) => `
-                            <li>
-                                <input type="radio" name="q${qIndex}" id="q${qIndex}-${aIndex}" data-correct="${
-                              a.correct
-                            }">
-                                <label for="q${qIndex}-${aIndex}">${escapeHTML(
-                              a.answer
-                            )}</label>
-                            </li>`
-                          )
-                          .join("")}
-                    </ul>
-                </div>`;
-              })
-              .join("")}
-            <button class="checkAnsButton" onclick="checkAnswers()">Check Answers</button>
+                    return `
+                    <div class="question">
+                        <p>${escapeHTML(q.question)}</p>
+                        <ul>
+                            ${q.answers
+                              .map(
+                                (a, aIndex) => `
+                                <li>
+                                    <input type="radio" name="q${qIndex}" id="q${qIndex}-${aIndex}" data-correct="${
+                                  a.correct
+                                }">
+                                    <label for="q${qIndex}-${aIndex}">${escapeHTML(
+                                  a.answer
+                                )}</label>
+                                </li>`
+                              )
+                              .join("")}
+                        </ul>
+                    </div>`;
+                  })
+                  .join("")}
+                <button class="checkAnsButton" onclick="checkAnswers()">Check Answers</button>
+              </div>
+            </div>
           </div>
         </body>
       </html>`;
@@ -249,8 +257,7 @@ function escapeHTML(str) {
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;")
-      .replace(/&/g, "&amp;");
+      .replace(/'/g, "&#39;");
     return newStr;
   } catch (error) {
     console.log("\t could not escape HTML", str, error);
