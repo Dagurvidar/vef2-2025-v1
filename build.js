@@ -67,7 +67,7 @@ async function generateIndexAndCategories() {
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Quiz Categories</title>
-      <link rel="stylesheet" href="./styles.css">
+      <link rel="stylesheet" href="styles.css">
   </head>
   <body>
     <div class="wrapper">
@@ -104,8 +104,8 @@ async function generateIndexAndCategories() {
             content="width=device-width, initial-scale=1.0"
           />
           <title>${escapeHTML(categoryData.title)}</title>
-          <link rel="stylesheet" href="../styles.css" />
-          <script defer src="../src/main.js"></script>
+          <link rel="stylesheet" href="styles.css" />
+          <script defer src="main.js"></script>
         </head>
         <body>
           <div class="wrapper">
@@ -143,7 +143,7 @@ async function generateIndexAndCategories() {
                     </div>`;
                   })
                   .join("")}
-                <button class="checkAnsButton" onclick="checkAnswers()">Check Answers</button>
+                <button class="checkAnsButton">Check Answers</button>
               </div>
             </div>
           </div>
@@ -265,9 +265,11 @@ function escapeHTML(str) {
   }
 }
 
-async function copyStyles() {
+async function copyFiles() {
   try {
     await fs.copyFile("./src/styles.css", "./dist/styles.css");
+    console.log("main.js copied to dist/");
+    await fs.copyFile("./src/main.js", "./dist/main.js");
     console.log("styles.css copied to dist/");
   } catch (error) {
     console.error("\t", "Failed to copy styles.css:", error.message);
@@ -277,7 +279,7 @@ async function copyStyles() {
 async function main() {
   console.log("Generating HTML files...");
   await generateIndexAndCategories();
-  await copyStyles();
+  await copyFiles();
   console.log("Build complete!");
 }
 
