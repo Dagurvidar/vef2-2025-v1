@@ -28,7 +28,7 @@ async function readJson(filePath) {
   }
 }
 
-async function generateIndex() {
+async function generateIndexAndCategories() {
   const indexData = await readJson(INDEX_PATH);
   console.log("Loaded index.json:", indexData);
 
@@ -39,7 +39,6 @@ async function generateIndex() {
 
   const validCategories = await Promise.all(
     indexData.map(async (category) => {
-      console.log(category.file);
       if (!category?.file || !category?.title) {
         console.log(
           `Skipping category ${JSON.stringify(
@@ -55,13 +54,13 @@ async function generateIndex() {
         return null;
       }
 
-      return category;
+      return { ...category, data: validation.data };
     })
   );
 
   const filteredCategories = validCategories.filter(Boolean);
 
-  const htmlContent = `
+  const indexHtmlContent = /* html */ `
   <!DOCTYPE html>
   <html lang="is">
   <head>
@@ -76,16 +75,79 @@ async function generateIndex() {
           ${filteredCategories
             .map(
               (category) =>
-                `<li><a href="${category.file.replace(".json", ".html")}">${
-                  category.title
-                }</a></li>`
+                `<li><a href="${category.file.replace(
+                  ".json",
+                  ".html"
+                )}">${escapeHTML(category.title)}</a></li>`
             )
             .join("")}
       </ul>
   </body>
   </html>`;
 
-  await writeHtml("index.html", htmlContent);
+  await writeHtml("index.html", indexHtmlContent);
+  console.log("index.html created!");
+
+  for (const category of filteredCategories) {
+    const { data: categoryData } = category;
+    console.log("the current category is:", category);
+    const categoryHtmlContent = /* html */ ` 
+      <!DOCTYPE html>
+      <html lang="en">
+        <head>
+          <meta charset="UTF-8" />
+          <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
+          />
+          <title>${escapeHTML(categoryData.title)}</title>
+          <link rel="stylesheet" href="../styles.css" />
+          <script defer src="../src/main.js"></script>
+        </head>
+        <body>
+          <h1>${escapeHTML(categoryData.title)}</h1>
+          <div id="quiz-container">
+            ${categoryData.questions
+              .map((q, qIndex) => {
+                if (!Array.isArray(q.answers) || q.answers.length === 0) {
+                  console.error(
+                    `Skipping question "${q.question}" in ${category.file} - No valid answers.`
+                  );
+                  return "";
+                }
+
+                return `
+                <div class="question">
+                    <p>${escapeHTML(q.question)}</p>
+                    <ul>
+                        ${q.answers
+                          .map(
+                            (a, aIndex) => `
+                            <li>
+                                <input type="radio" name="q${qIndex}" id="q${qIndex}-${aIndex}" data-correct="${
+                              a.correct
+                            }">
+                                <label for="q${qIndex}-${aIndex}">${escapeHTML(
+                              a.answer
+                            )}</label>
+                            </li>`
+                          )
+                          .join("")}
+                    </ul>
+                </div>`;
+              })
+              .join("")}
+            <button onclick="checkAnswers()">Check Answers</button>
+          </div>
+        </body>
+      </html>`;
+
+    await writeHtml(
+      category.file.replace(".json", ".html"),
+      categoryHtmlContent
+    );
+    console.log(`${category.file.replace(".json", ".html")} created!`);
+  }
 }
 
 /**
@@ -134,7 +196,11 @@ async function validateQuizFile(filePath) {
 
     // Remove invalid answers
     q.answers = q.answers.filter((a) => {
-      if (!("answer" in a) || typeof a.correct !== "boolean") {
+      if (
+        !("answer" in a) ||
+        !("correct" in a) ||
+        typeof a.correct !== "boolean"
+      ) {
         console.error(
           `Removing invalid answer in question: "${q.question}" in ${filePath}.`
         );
@@ -150,74 +216,6 @@ async function validateQuizFile(filePath) {
   }
 
   return { valid: true, data };
-}
-
-async function generateCategories() {
-  const indexData = await readJson(INDEX_PATH);
-  if (!indexData) return;
-
-  for (const category of indexData) {
-    const categoryData = await readJson(`./data/${category.file}`);
-
-    // Check if categoryData is valid
-    if (!categoryData || !categoryData.questions) {
-      console.error(
-        `Skipping category "${category.title}" - Invalid or missing questions.`
-      );
-      continue; // Skip this category
-    }
-
-    const htmlContent = `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${escapeHTML(categoryData.title)}</title>
-        <link rel="stylesheet" href="../styles.css">
-        <script defer src="../src/main.js"></script>
-    </head>
-    <body>
-        <h1>${escapeHTML(categoryData.title)}</h1>
-        <div id="quiz-container">
-            ${categoryData.questions
-              .map((q, qIndex) => {
-                // Ensure q.answers is an array
-                if (!Array.isArray(q.answers)) {
-                  console.error(
-                    `\t Skipping question "${q.question}" in ${category.file} - Answers are missing or invalid.`
-                  );
-                  return ""; // Skip this question
-                }
-
-                return `
-                <div class="question">
-                    <p>${escapeHTML(q.question)}</p>
-                    <ul>
-                        ${q.answers
-                          .map(
-                            (a, aIndex) => `
-                            <li>
-                                <input type="radio" name="q${qIndex}" id="q${qIndex}-${aIndex}" data-correct="${
-                              a.correct
-                            }">
-                                <label for="q${qIndex}-${aIndex}">${escapeHTML(
-                              a.answer
-                            )}</label>
-                            </li>`
-                          )
-                          .join("")}
-                    </ul>
-                </div>`;
-              })
-              .join("")}
-            <button onclick="checkAnswers()">Check Answers</button>
-        </div>
-    </body>
-    </html>`;
-
-    await writeHtml(category.file.replace(".json", ".html"), htmlContent);
-  }
 }
 
 /**
@@ -245,17 +243,17 @@ async function writeHtml(fileName, htmlContent) {
  */
 function escapeHTML(str) {
   try {
-    str
+    const newStr = str
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;")
       .replace(/&/g, "&amp;");
+    return newStr;
   } catch (error) {
-    console.log("\t could not escape HTML", error);
+    console.log("\t could not escape HTML", str, error);
     return "";
   }
-  return str;
 }
 
 async function copyStyles() {
@@ -269,8 +267,7 @@ async function copyStyles() {
 
 async function main() {
   console.log("Generating HTML files...");
-  await generateIndex();
-  await generateCategories();
+  await generateIndexAndCategories();
   await copyStyles();
   console.log("Build complete!");
 }
