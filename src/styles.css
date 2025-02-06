@@ -69,16 +69,44 @@ ul {
   margin-left: var(--spacing);
 }
 
-.choices {
+.question-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.question-container .checkAnsButton {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: fit-content;
+}
+
+.question {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.question ul {
   list-style-type: none;
   gap: 0.5rem;
   margin-left: 0;
 }
 
-.choices label {
+.question li {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+}
+
+/*
+.question label {
   display: flex;
   gap: 0.25rem;
 }
+*/
 
 .correct-answer {
   background-color: #d4edda;

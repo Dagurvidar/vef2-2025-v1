@@ -15,7 +15,7 @@ async function readJson(filePath) {
   try {
     data = await fs.readFile(path.resolve(filePath), "utf-8");
   } catch (error) {
-    console.error(`Error reading file ${filePath}:`, error.message);
+    console.error("\t", `Error reading file ${filePath}:`, error.message);
     return null;
   }
 
@@ -23,7 +23,7 @@ async function readJson(filePath) {
     const parsed = JSON.parse(data);
     return parsed;
   } catch (error) {
-    console.error("error parsing data as json", error);
+    console.error("\t", "error parsing data as json", error);
     return null;
   }
 }
@@ -33,7 +33,7 @@ async function generateIndexAndCategories() {
   console.log("Loaded index.json:", indexData);
 
   if (!indexData || !Array.isArray(indexData)) {
-    console.error("Error: index.json is missing or invalid.");
+    console.error("\t", "Error: index.json is missing or invalid.");
     return;
   }
 
@@ -50,7 +50,7 @@ async function generateIndexAndCategories() {
 
       const validation = await validateQuizFile(`./data/${category.file}`);
       if (!validation.valid) {
-        console.error(validation.error);
+        console.error("\t", validation.error);
         return null;
       }
 
@@ -90,7 +90,6 @@ async function generateIndexAndCategories() {
 
   for (const category of filteredCategories) {
     const { data: categoryData } = category;
-    console.log("the current category is:", category);
     const categoryHtmlContent = /* html */ ` 
       <!DOCTYPE html>
       <html lang="en">
@@ -106,11 +105,12 @@ async function generateIndexAndCategories() {
         </head>
         <body>
           <h1>${escapeHTML(categoryData.title)}</h1>
-          <div id="quiz-container">
+          <div id="quiz-container" class="question-container">
             ${categoryData.questions
               .map((q, qIndex) => {
                 if (!Array.isArray(q.answers) || q.answers.length === 0) {
                   console.error(
+                    "\t",
                     `Skipping question "${q.question}" in ${category.file} - No valid answers.`
                   );
                   return "";
@@ -137,7 +137,7 @@ async function generateIndexAndCategories() {
                 </div>`;
               })
               .join("")}
-            <button onclick="checkAnswers()">Check Answers</button>
+            <button class="checkAnsButton" onclick="checkAnswers()">Check Answers</button>
           </div>
         </body>
       </html>`;
@@ -187,6 +187,7 @@ async function validateQuizFile(filePath) {
   data.questions.forEach((q) => {
     if (!q.question || !Array.isArray(q.answers)) {
       console.error(
+        "\t",
         `Skipping question "${
           q.question || "UNKNOWN"
         }" in ${filePath} - Invalid answers format.`
@@ -202,6 +203,7 @@ async function validateQuizFile(filePath) {
         typeof a.correct !== "boolean"
       ) {
         console.error(
+          "\t",
           `Removing invalid answer in question: "${q.question}" in ${filePath}.`
         );
         hasInvalidAnswers = true;
@@ -232,7 +234,7 @@ async function writeHtml(fileName, htmlContent) {
 
     console.log(`${fileName} created successfully!`);
   } catch (error) {
-    console.error(`Error writing ${fileName}:`, error);
+    console.error("\t", `Error writing ${fileName}:`, error);
   }
 }
 
@@ -261,7 +263,7 @@ async function copyStyles() {
     await fs.copyFile("./src/styles.css", "./dist/styles.css");
     console.log("styles.css copied to dist/");
   } catch (error) {
-    console.error("Failed to copy styles.css:", error.message);
+    console.error("\t", "Failed to copy styles.css:", error.message);
   }
 }
 
