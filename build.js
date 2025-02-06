@@ -9,11 +9,12 @@ const DIST_DIR = "./dist";
  * @param {string} filePath Skráin sem á að lesa
  * @returns {Promise<unknown | null>} Les skrá úr `filePath` og skilar innihaldi. Skilar `null` ef villa kom upp.
  */
-async function readJson(filePath) {
+export async function readJson(filePath) {
   console.log("starting to read", filePath);
   let data;
   try {
     data = await fs.readFile(path.resolve(filePath), "utf-8");
+    console.log("Data read from file:", data); // Debug log
   } catch (error) {
     console.error("\t", `Error reading file ${filePath}:`, error.message);
     return null;
@@ -21,6 +22,7 @@ async function readJson(filePath) {
 
   try {
     const parsed = JSON.parse(data);
+    console.log("Parsed JSON:", parsed); // Debug log
     return parsed;
   } catch (error) {
     console.error("\t", "error parsing data as json", error);
@@ -163,7 +165,7 @@ async function generateIndexAndCategories() {
  * @param {string} filePath - slóðin að json skránni.
  * @returns {Promise<{valid: boolean, data: object | null, error?: string}>}
  */
-async function validateQuizFile(filePath) {
+export async function validateQuizFile(filePath) {
   const data = await readJson(filePath);
 
   if (!data) {
